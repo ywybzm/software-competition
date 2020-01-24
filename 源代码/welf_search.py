@@ -10,12 +10,12 @@ from collections import Counter
 # [ [分词1],[分词2] ]
 def welf_divide(welf_list):
     jieba.load_userdict('welf_word.txt')
-    res = []
+    result_list = []
 
     for i in welf_list:
         i = re.sub('五险一金补充|五险|一金', '五险一金', i)
-        res.append(jieba.cut(i))
-    return res
+        result_list.append(jieba.cut(i))
+    return result_list
 
 
 # [ (词,词频),(词,词频) ]
@@ -25,10 +25,9 @@ def count_num(welf_list, welfare_num):
     for i in welf_list:
         text = text + i
     text = re.sub('五险一金补充|五险|一金', '五险一金', text)
-    res = []
-    res = jieba.cut(text)
+    result_list = jieba.cut(text)
 
-    return Counter(res).most_common(int(welfare_num))
+    return Counter(result_list).most_common(int(welfare_num))
 
 
 def divide():
@@ -39,9 +38,9 @@ def divide():
     with open('./福利.json', 'w+', encoding='utf-8') as f:
         f.write(text)
 
-    res = re.findall('{.*}', text)[0].split('-!-!-')
+    result_list = re.findall('{.*}', text)[0].split('-!-!-')
     welf_list = []
-    for i in res:
+    for i in result_list:
         # time.sleep(30)
         try:
             data = json.loads(i)
@@ -53,20 +52,20 @@ def divide():
 
 def welf_re(welfare_num):
     welf_list = divide()
-    res = count_num(welf_list, welfare_num)
+    result_list = count_num(welf_list, welfare_num)
 
-    return res
+    return result_list
 
 
 def search_welf(welfare_num):
     num = 0
     data_list = []
-    res = welf_re(welfare_num)
+    result_list = welf_re(welfare_num)
 
-    for i in res:
+    for i in result_list:
         num += i[1]
 
-    for i in range(len(res)):
-        data_list.append({'name': res[i][0], 'value': int((res[i][1]))})
+    for i in range(len(result_list)):
+        data_list.append({'name': result_list[i][0], 'value': int((result_list[i][1]))})
     print(data_list)
     return data_list
