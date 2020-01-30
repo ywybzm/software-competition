@@ -118,7 +118,7 @@ class ExtractKeyword:
         self.file_db_util.data2file(clean_file_name, file_mode, file_encoding, self.clean_data_list)
         pass
 
-    # TODO 模型准备，暂时考虑LDA
+    # TODO 模型准备，暂时考虑LDA，可以使用百度api
     def model_prepare(self):
         pass
 
@@ -128,6 +128,11 @@ class ExtractKeyword:
             分词又包括自定义词库，定义词性，词频统计，tf-idf权值计算
             最后得到的是jieba分词且通过tf-idf认为足够重要的关键词并写入数据库的keyword部分
             """
+        # 流程是:1.读取cleanDevData.txt并提取每一条记录的info信息
+        # 2.分词，去除停用词
+        # 3.统计总体词频与文档词频，计算tf-idf权值，设定阈值，阈值过低的不视为关键词
+        # 4.将关键词写入数据库与文件中
+        # 5.生成词云
         pass
 
     # TODO 将jieba分词结果转为词向量
@@ -136,10 +141,14 @@ class ExtractKeyword:
             调用word2vec的方法将jieba分词后的关键词形成词向量
             """
 
-        def similarity_calculation(self, target_vector):
+        def similarity_calculation(self, target):
             """
                 传入的词向量与本句的词向量计算余弦相似度进而判断两句话内容是否相似
                 """
+            # 流程是:1.对target进行分词，去除停用词
+            # 2.对target中包含的诸如省市，工资范围，福利待遇之类的其他属性字段进行数据库筛选
+            # 3.使用随机抽样的方法选取特定数量的样本，将每条记录的关键词字段转换为词向量，与target记录关键词字段转换为的词向量进行余弦相似度计算，若在此期间无满足阈值的记录出现，则重复该步骤
+            # 4.返回余弦相似度最高的前5条记录，后5条记录作为可能感兴趣的工作返回工作名称，公司名称，职能类别，工作省市，工资范围
             pass
 
         pass
@@ -150,6 +159,8 @@ class ExtractKeyword:
         pass
 
     # TODO 整合至func中
+
+
 class ModeErrorException(Exception):
 
     def __init__(self):
@@ -172,4 +183,3 @@ if __name__ == "__main__":
     # clean_data就包括了写入文件和清洗文件的两个功能
     # 又因为f.write会额外写入()，所以提取时去除左右括号就是实际内容
     keyword_util.clean_data(dirty_file_name, clean_file_name, file_mode, file_encoding)
-
