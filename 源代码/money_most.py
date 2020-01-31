@@ -1,4 +1,4 @@
-def get_money_most(result_list):  # [(),()]
+def get_most_money(result_list):  # [(),()]
     res = []
     for i in range(len(result_list)):
         money = 0

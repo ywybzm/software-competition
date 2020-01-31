@@ -1,8 +1,7 @@
 import jieba
-import db_connect
 import re
-import time
 from gensim import corpora, models, similarities
+from db_connect import DbConnect
 
 size0 = 200
 size1 = 100
@@ -10,17 +9,37 @@ size2 = 50
 yy = 200
 yy1 = 250
 
+"""
+    1.分词，去除停用词
+    2.统计总体词频与文档词频，计算tf-idf权值，设定阈值，阈值过低的不视为关键词
+    3.1阈值需要固定步长去试探，评判标准可以是机器学习中的查准率，查全率和F值
+    3.2对所有阈值选择使用matplotlib绘制点线图查看拐点，对应阈值就是效果最好的阈值
+    4.将关键词写入数据库与文件中
+    5.生成词云
+    
+    实际工作流程是:
+    1.对target进行分词，去除停用词
+    2.对target中包含的诸如省市，工资范围，福利待遇之类的其他属性字段进行数据库筛选 √
+    3.使用随机抽样的方法选取特定数量的样本，将每条记录的关键词字段转换为词向量，与target记录关键词字段转换为的词向量进行余弦相似度计算，若在此期间无满足阈值的记录出现，则重复该步骤
+    4.返回余弦相似度最高的前5条记录，后5条记录作为可能感兴趣的工作返回工作名称，公司名称，职能类别，工作省市，工资范围
 
-def resume(place, major, text, dbUtil):
+    """
+
+
+def resume(place, major, text, db_util: DbConnect):
     if text != '':
+        # TODO 使用随机抽样的方法选取特定数量的样本,确定合适的常数k
+        k = 100  # 暂定
+        # TODO 阈值需要固定步长去试探，评判标准可以是机器学习中的查准率，查全率和F值；对所有阈值选择使用matplotlib绘制点线图查看拐点，对应阈值就是效果最好的阈值
+        threshold = 0.005
         sql = "select distinct title,company,least_money,most_money,keyword,info from job where keyword like '%" \
               + major + "%' or info like '%" + major + "%' or title like '%" + major + "%'  and place_province like '%" \
-              + place + "%' or place_city like '%" + place + "%' limit 100"
-        # resume是添加交集功能，
-        data = dbUtil.query(sql)
+              + place + "%' or place_city like '%" + place + "%' limit " + str(k)  # 增加随机抽样的部分-即等距离选择特定数量样本
+
+        data = db_util.query(sql)
+        db_util.close_connection()
 
         doc_test = text
-        # print(doc0,doc1,doc_test)
         all_doc_chara = []
         all_doc = []
         try:
@@ -28,15 +47,18 @@ def resume(place, major, text, dbUtil):
                 all_doc.append(i[0] + '-!-!-' + i[1] + '-!-!-' + i[2] + '-!-!-' + i[3] + '-!-!-' + i[4].split(' ')[5])
                 all_doc_chara.append(
                     "".join(re.sub(',|!|\?', '', i[0].upper())) + "".join(re.sub(',|!|\?| ', ' ', i[5].upper())))
+            # TODO 生成词云
         except:
             pass
 
         all_doc_list = []
         for doc in all_doc_chara:
+            # TODO 去除停用词
             doc_list = [word for word in jieba.cut(doc)]
             all_doc_list.append(doc_list)
 
         # print(all_doc_list)#原文本的分词列表
+        # TODO 去除停用词
         doc_test_list = [word for word in jieba.cut(doc_test)]
 
         # print(doc_test_list)#测试文本的分词列表
@@ -57,134 +79,91 @@ def resume(place, major, text, dbUtil):
         # print(sim)
         res = sorted(enumerate(sim), key=lambda item: -item[1])
         res_list = []
-        child_res_dict = {}
-        child_res_dict['node'] = []
-        child_res_dict['link'] = []
+        child_res_dict = {'node': [], 'link': []}
         print(res)
-        # print(len(res))
+
+        # 处理数据使其符合echarts要求
+
+        cou_num = 1
         if len(res) <= 5:
-            cou_num = 1
-            for i in range(0, len(res)):
-
-                if res[i][1] > 0.005:
-                    node_dict1 = {'name': '序号:' + str(i) + ',公司名:' + all_doc[res[i][0]].split('-!-!-')[1],
-                                  'value': '%.2f' % (res[i][1] * 1000), 'x': (cou_num + 1) * 10, 'y': 200,
-                                  'symbolSize': size1,
-                                  'label': {'normal': {'position': 'inside', 'fontSize': 10, 'color': '#FF6633'}},
-                                  "draggable": "true"}
-
-                    node_dict2 = {'name': '序号:' + str(i) + ',职位名:' + all_doc[res[i][0]].split('-!-!-')[0] + ',工资区间:' + \
-                                          all_doc[res[i][0]].split('-!-!-')[2] + '-' + \
-                                          all_doc[res[i][0]].split('-!-!-')[3],
-                                  'value': '%.2f' % (res[i][1] * 1000), 'x': (cou_num + 1) * 10, 'y': 200,
-                                  'symbolSize': size2,
-                                  'label': {'normal': {'position': 'inside', 'fontSize': 10, 'color': '#FF6633'}},
-                                  "draggable": "true"}
-
-                    # node_dict3 = {'name': '序号:' + str(i) + ',关键词:' + all_doc[res[i][0]].split('-!-!-')[4],
-                    #               'value': '%.2f' % (res[i][1] * 1000), 'x': (cou_num + 1) * 10, 'y': 200,
-                    #               'symbolSize': size2,
-                    #               'label': {'normal': {'position': 'inside', 'fontSize': 10, 'color': '#FF6633'}},
-                    #               "draggable": "true"}
-                    cou_num += 3
-
-                    child_res_dict['node'].append(node_dict1)
-                    child_res_dict['node'].append(node_dict2)
-                    # child_res_dict['node'].append(node_dict3)
-
-                    link_dict1 = {'source': '序号:' + str(i) + ',公司名:' + all_doc[res[i][0]].split('-!-!-')[1],
-                                  'target': '序号:' + str(i) + ',公司名:' + all_doc[res[i][0]].split('-!-!-')[1],
-                                  'name': '', 'value': '', 'label': '',
-                                  'lineStyle': {"normal": {"width": 2.0, "curveness": 0.2, "color": '#FF6633'}}}
-                    link_dict2 = {'source': '序号:' + str(i) + ',职位名:' + all_doc[res[i][0]].split('-!-!-')[0] + ',工资区间:' + \
-                                            all_doc[res[i][0]].split('-!-!-')[2] + '-' + \
-                                            all_doc[res[i][0]].split('-!-!-')[3],
-                                  'target': '序号:' + str(i) + ',公司名:' + all_doc[res[i][0]].split('-!-!-')[1],
-                                  'name': '', 'value': '', 'label': '',
-                                  'lineStyle': {"normal": {"width": 2.0, "curveness": 0.2, "color": '#FF6633'}}}
-                    # link_dict3 = {'source': '序号:' + str(i) + ',关键词:' + all_doc[res[i][0]].split('-!-!-')[4],
-                    #               'target': '序号:' + str(i) + ',公司名:' + all_doc[res[i][0]].split('-!-!-')[1],
-                    #               'name': '', 'value': '', 'label': '',
-                    #               'lineStyle': {"normal": {"width": 2.0, "curveness": 0.2, "color": '#FF6633'}}}
-
-                    child_res_dict['link'].append(link_dict1)
-                    child_res_dict['link'].append(link_dict2)
-                    # child_res_dict['link'].append(link_dict3)
-
-            child_res_dict['node'].append({'name': '分析结果', 'value': '', 'x': 10, 'y': 200, 'symbolSize': size0,
-                                           'label': {
-                                               'normal': {'position': 'inside', 'fontSize': 14, 'color': '#FF6633'}},
-                                           "draggable": "true"})
-            copy_list = child_res_dict['link'].copy()
-            for j in range(0, len(copy_list), 3):
-                child_res_dict['link'].append({'source': copy_list[j]['source'],
-                                               'target': child_res_dict['node'][len(child_res_dict['node']) - 1][
-                                                   'name'],
-                                               'name': '', 'value': '', 'label': '', 'lineStyle': {
-                        "normal": {"width": 2.0, "curveness": 0.2, "color": '#FF6633'}}})
-            res_list.append(child_res_dict)
+            loop_num = len(res)
         else:
-            cou_num = 1
-            for i in range(0, 8):
+            loop_num = 8
 
-                if res[i][1] > 0.005:
-                    node_dict1 = {'name': '序号:' + str(i) + ',公司名:' + all_doc[res[i][0]].split('-!-!-')[1],
-                                  'value': '%.2f' % (res[i][1] * 1000), 'x': (cou_num + 1) * 10, 'y': 200,
-                                  'symbolSize': size1,
-                                  'label': {'normal': {'position': 'inside', 'fontSize': 10, 'color': '#FF6633'}},
-                                  "draggable": "true"}
+        for i in range(0, loop_num):
 
-                    node_dict2 = {'name': '序号:' + str(i) + ',职位名:' + all_doc[res[i][0]].split('-!-!-')[0] + ',工资区间:' + \
-                                          all_doc[res[i][0]].split('-!-!-')[2] + '-' + \
-                                          all_doc[res[i][0]].split('-!-!-')[3],
+            if res[i][1] > threshold:
+                node_dict1 = {'name': '序号:' + str(i) + ',公司名:' + all_doc[res[i][0]].split('-!-!-')[1],
+                              'value': '%.2f' % (res[i][1] * 1000), 'x': (cou_num + 1) * 10, 'y': 200,
+                              'symbolSize': size1,
+                              'label': {'normal': {'position': 'inside', 'fontSize': 10, 'color': '#FF6633'}},
+                              "draggable": "true"}
+
+                node_dict2 = {'name': '序号:' + str(i) + ',职位名:' + all_doc[res[i][0]].split('-!-!-')[0] + ',工资区间:' + \
+                                      all_doc[res[i][0]].split('-!-!-')[2] + '-' + \
+                                      all_doc[res[i][0]].split('-!-!-')[3],
+                              'value': '%.2f' % (res[i][1] * 1000), 'x': (cou_num + 1) * 10, 'y': 200,
+                              'symbolSize': size2,
+                              'label': {'normal': {'position': 'inside', 'fontSize': 10, 'color': '#FF6633'}},
+                              "draggable": "true"}
+                if loop_num <= 5:
+                    pass
+                else:
+                    node_dict3 = {'name': '序号:' + str(i) + ',关键词:' + all_doc[res[i][0]].split('-!-!-')[4],
                                   'value': '%.2f' % (res[i][1] * 1000), 'x': (cou_num + 1) * 10, 'y': 200,
                                   'symbolSize': size2,
                                   'label': {'normal': {'position': 'inside', 'fontSize': 10, 'color': '#FF6633'}},
                                   "draggable": "true"}
+                cou_num += 3
 
-                    # node_dict3 = {'name': '序号:' + str(i) + ',关键词:' + all_doc[res[i][0]].split('-!-!-')[4],
-                    #                   'value': '%.2f' % (res[i][1] * 1000), 'x': (cou_num + 1) * 10, 'y': 200,
-                    #                   'symbolSize': size2,
-                    #                   'label': {'normal': {'position': 'inside', 'fontSize': 10, 'color': '#FF6633'}},
-                    #                   "draggable": "true"}
-                    cou_num += 3
+                child_res_dict['node'].append(node_dict1)
+                child_res_dict['node'].append(node_dict2)
 
-                    child_res_dict['node'].append(node_dict1)
-                    child_res_dict['node'].append(node_dict2)
-                    # child_res_dict['node'].append(node_dict3)
+                if loop_num <= 5:
+                    pass
+                else:
+                    child_res_dict['node'].append(node_dict3)
 
-                    link_dict1 = {'source': '序号:' + str(i) + ',公司名:' + all_doc[res[i][0]].split('-!-!-')[1],
-                                  'target': '序号:' + str(i) + ',公司名:' + all_doc[res[i][0]].split('-!-!-')[1],
-                                  'name': '', 'value': '', 'label': '',
-                                  'lineStyle': {"normal": {"width": 2.0, "curveness": 0.2, "color": '#FF6633'}}}
-                    link_dict2 = {'source': '序号:' + str(i) + ',职位名:' + all_doc[res[i][0]].split('-!-!-')[0] + ',工资区间:' + \
-                                            all_doc[res[i][0]].split('-!-!-')[2] + '-' + \
-                                            all_doc[res[i][0]].split('-!-!-')[3],
-                                  'target': '序号:' + str(i) + ',公司名:' + all_doc[res[i][0]].split('-!-!-')[1],
-                                  'name': '', 'value': '', 'label': '',
-                                  'lineStyle': {"normal": {"width": 2.0, "curveness": 0.2, "color": '#FF6633'}}}
+                link_dict1 = {'source': '序号:' + str(i) + ',公司名:' + all_doc[res[i][0]].split('-!-!-')[1],
+                              'target': '序号:' + str(i) + ',公司名:' + all_doc[res[i][0]].split('-!-!-')[1],
+                              'name': '', 'value': '', 'label': '',
+                              'lineStyle': {"normal": {"width": 2.0, "curveness": 0.2, "color": '#FF6633'}}}
+                link_dict2 = {'source': '序号:' + str(i) + ',职位名:' + all_doc[res[i][0]].split('-!-!-')[0] + ',工资区间:' + \
+                                        all_doc[res[i][0]].split('-!-!-')[2] + '-' + \
+                                        all_doc[res[i][0]].split('-!-!-')[3],
+                              'target': '序号:' + str(i) + ',公司名:' + all_doc[res[i][0]].split('-!-!-')[1],
+                              'name': '', 'value': '', 'label': '',
+                              'lineStyle': {"normal": {"width": 2.0, "curveness": 0.2, "color": '#FF6633'}}}
+
+                if loop_num <= 5:
+                    pass
+                else:
                     link_dict3 = {'source': '序号:' + str(i) + ',关键词:' + all_doc[res[i][0]].split('-!-!-')[4],
                                   'target': '序号:' + str(i) + ',公司名:' + all_doc[res[i][0]].split('-!-!-')[1],
                                   'name': '', 'value': '', 'label': '',
                                   'lineStyle': {"normal": {"width": 2.0, "curveness": 0.2, "color": '#FF6633'}}}
 
-                    child_res_dict['link'].append(link_dict1)
-                    child_res_dict['link'].append(link_dict2)
+                child_res_dict['link'].append(link_dict1)
+                child_res_dict['link'].append(link_dict2)
+
+                if loop_num <= 5:
+                    pass
+                else:
                     child_res_dict['link'].append(link_dict3)
 
-            child_res_dict['node'].append({'name': '分析结果', 'value': '', 'x': 10, 'y': 200, 'symbolSize': size0,
-                                           'label': {
-                                               'normal': {'position': 'inside', 'fontSize': 14, 'color': '#FF6633'}},
-                                           "draggable": "true"})
-            copy_list = child_res_dict['link'].copy()
-            for j in range(0, len(copy_list), 3):
-                child_res_dict['link'].append({'source': copy_list[j]['source'],
-                                               'target': child_res_dict['node'][len(child_res_dict['node']) - 1][
-                                                   'name'],
-                                               'name': '', 'value': '', 'label': '', 'lineStyle': {
-                        "normal": {"width": 2.0, "curveness": 0.2, "color": '#FF6633'}}})
-            res_list.append(child_res_dict)
-
+        child_res_dict['node'].append({'name': '分析结果', 'value': '', 'x': 10, 'y': 200, 'symbolSize': size0,
+                                       'label': {
+                                           'normal': {'position': 'inside', 'fontSize': 14, 'color': '#FF6633'}},
+                                       "draggable": "true"})
+        copy_list = child_res_dict['link'].copy()
+        for j in range(0, len(copy_list), 3):
+            child_res_dict['link'].append({'source': copy_list[j]['source'],
+                                           'target': child_res_dict['node'][len(child_res_dict['node']) - 1][
+                                               'name'],
+                                           'name': '', 'value': '', 'label': '', 'lineStyle': {
+                    "normal": {"width": 2.0, "curveness": 0.2, "color": '#FF6633'}}})
+        res_list.append(child_res_dict)
         return res_list
+
     else:
         return []

@@ -94,11 +94,13 @@ def search_major_data(sql):
     global dbUtil
     data_list = []
     result_list = list(dbUtil.query(sql))
+
     # 处理数据使其符合echarts要求
     result_list_sorted_by_money = money_int.money_str2int(result_list)
     for i in range(len(result_list_sorted_by_money)):
         data_list.append({'name': result_list_sorted_by_money[i][0],
                           'value': (int(result_list_sorted_by_money[i][1] / 1000 / 12))})
+
     dbUtil.close_connection()
     return data_list
 
@@ -200,11 +202,14 @@ def search_demand_data(sql):
     data_list = []
     result_list = list(dbUtil.query(sql))
     num = 0
+
     # 处理数据使其符合echarts要求
     for i in range(len(result_list)):
         num += result_list[i][1]
     for i in range(len(result_list)):
         data_list.append({'name': result_list[i][0], 'value': int((result_list[i][1]))})
+
+    dbUtil.close_connection()
     return data_list
 
 
@@ -308,6 +313,7 @@ def query_position():
     data_dict = {'names': [], 'values': []}
     result_list = list(dbUtil.query(sql))
     num = 0
+
     # 处理数据使其符合echarts要求
     for i in range(len(result_list)):
         num += result_list[i][1]
@@ -315,7 +321,9 @@ def query_position():
         data_dict['names'].append(result_list[i][0])
     for i in range(len(result_list)):
         data_dict['values'].append(int((result_list[i][1])))
+
     # print(data_dict)
+    dbUtil.close_connection()
     return jsonify(data_dict)
 
 
@@ -340,11 +348,15 @@ def query_city():
     data_list = []
     result_list = list(dbUtil.query(sql))
     num = 0
+
+    # 处理数据使其符合echarts要求
     for i in range(len(result_list)):
         num += result_list[i][1]
     for i in range(len(result_list)):
         data_list.append({'name': result_list[i][0], 'value': int((result_list[i][1]))})
+
     # print(data_dict)
+    dbUtil.close_connection()
     return jsonify(data_list)
 
 
@@ -369,6 +381,8 @@ def query_talents():
     data_dict = {'names': [], 'values': [], 'extra': []}
     result_list = list(dbUtil.query(sql))
     num = 0
+
+    # 处理数据使其符合echarts要求
     for i in range(len(result_list)):
         num += result_list[i][1]
     for i in range(len(result_list)):
@@ -376,7 +390,9 @@ def query_talents():
         data_dict['extra'].append(result_list[i][0])
     for i in range(len(result_list)):
         data_dict['values'].append(int((result_list[i][1])))
+
     # print(data_dict)
+    dbUtil.close_connection()
     return jsonify(data_dict)
 
 
@@ -395,6 +411,7 @@ def query_welfare():
 
     elif request.method == 'GET':
         welfare_num = request.args.get('welfare_num')
+
     # print(jsonify(welf_search.Welf_Search(welfare_num)))
     data_dict = {'data': (welf_search.search_welf(welfare_num))}
     return jsonify(data_dict)
@@ -418,11 +435,15 @@ def query_location():
     data_list = []
     result_list = list(dbUtil.query(sql))
     num = 0
+
+    # 处理数据使其符合echarts要求
     for i in range(len(result_list)):
         num += result_list[i][1]
     for i in range(len(result_list)):
         data_list.append({'name': result_list[i][0], 'value': int((result_list[i][1]))})
+
     # print(data_dict)
+    dbUtil.close_connection()
     return jsonify(data_list)
 
 
@@ -437,34 +458,41 @@ def search_salary(sql):
     global dbUtil
     data_dict = {}
     result_list = list(dbUtil.query(sql))
+
+    # 处理数据使其符合echarts要求
     is_not_same = []
 
-    res_sorted_by_least = money_least.get_least_money(result_list)
-    res_sorted_by_most = money_most.get_money_most(result_list)
+    # TODO 此处只要把数据库中的least_money和most_money字段都转为数字就不需要再用到这两个函数了，所以这两个函数可以不用整理
+    least_money_list = money_least.get_least_money(result_list)
+    most_money_list = money_most.get_most_money(result_list)
+    least_money_temp_list = []
+    most_money_temp_list = []
 
-    res_fi1 = []
-    res_fi2 = []
-
-    for i in res_sorted_by_least:
+    for i in least_money_list:
         if i["地区名"] not in is_not_same:
             is_not_same.append(i["地区名"])
-            res_fi1.append({"地区名": i["地区名"], "最低工资": i["最低工资"]})
+            least_money_temp_list.append({"地区名": i["地区名"], "最低工资": i["最低工资"]})
+
     is_not_same = []
-    for i in res_sorted_by_most:
+
+    for i in most_money_list:
         if i["地区名"] not in is_not_same:
             is_not_same.append(i["地区名"])
-            res_fi2.append({"地区名": i["地区名"], "最高工资": i["最高工资"]})
+            most_money_temp_list.append({"地区名": i["地区名"], "最高工资": i["最高工资"]})
 
-    for i in range(len(res_fi1)):
-        res_fi1[i]["最高工资"] = res_fi2[i]["最高工资"]
+    for i in range(len(least_money_temp_list)):
+        least_money_temp_list[i]["最高工资"] = most_money_temp_list[i]["最高工资"]
 
     data_dict['numsh'] = []
     data_dict['numsl'] = []
     data_dict['names'] = []
-    for i in range(len(res_fi1)):
-        data_dict['numsh'].append(res_fi1[i]['最高工资'])
-        data_dict['numsl'].append(res_fi1[i]['最低工资'])
-        data_dict['names'].append(res_fi1[i]['地区名'])
+    for i in range(len(least_money_temp_list)):
+        data_dict['numsh'].append(least_money_temp_list[i]['最高工资'])
+        data_dict['numsl'].append(least_money_temp_list[i]['最低工资'])
+        data_dict['names'].append(least_money_temp_list[i]['地区名'])
+
+    # print(data_dict)
+    dbUtil.close_connection()
     return data_dict
 
 
@@ -480,6 +508,7 @@ def query_salary_bj():
     data_dict['names'].remove('昌平区')
     del data_dict['numsh'][5]
     del data_dict['numsl'][5]
+
     # print(data_dict)
     return jsonify(data_dict)
 
@@ -580,16 +609,17 @@ def query_salary_zj():
 @app.route('/resume/', methods=['GET', 'POST'])
 def query_keyword():
     if request.method == 'POST':
-        select1 = request.form.get('select1')
-        select2 = request.form.get('select2')
-        testarea1 = request.form.get('textArea1')
+        place = request.form.get('select1')
+        major = request.form.get('select2')
+        text = request.form.get('textArea1')
 
     elif request.method == 'GET':
-        select1 = request.args.get('select1')
-        select2 = request.args.get('select2')
-        testarea1 = request.args.get('textArea1')
-    print(select1, select2, testarea1)
-    res = resume.resume(select1, select2, testarea1, dbUtil)
+        place = request.args.get('select1')
+        major = request.args.get('select2')
+        text = request.args.get('textArea1')
+
+    print(place, major, text)
+    res = resume.resume(place, major, text, dbUtil)
 
     return jsonify(res)
 
