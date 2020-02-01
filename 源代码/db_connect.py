@@ -37,8 +37,24 @@ class DbConnect:
             self.con = None
 
     def query(self, sql):
+        data = []
         self.open_connection()
-        self.cur.execute(sql)
-        data = self.cur.fetchall()
-        self.close_connection()
+        try:
+            self.cur.execute(sql)
+            data = self.cur.fetchall()
+        except:
+            pass
+        finally:
+            self.close_connection()
+
         return data
+
+    def update(self, sql, data):
+        self.open_connection()
+        try:
+            self.cur.execute(sql, data)
+            self.con.commit()
+        except:
+            pass
+        finally:
+            self.close_connection()
