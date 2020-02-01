@@ -105,16 +105,22 @@ def search_major_data(sql):
     return data_list
 
 
+# TODO 与前端协商修改ajax的请求url从而简化下面的后端代码
+
+
 # 职位名，薪水
 @app.route('/zhuanye/ruanjiankaifa', methods=['GET', 'POST'])
 def query_major_rk():
-    sql = 'SELECT title,COUNT(title),most_money\
+
+    # TODO 将ORDER BY的COUNT(title)变为COUNT(worktype)，worktype字段由爬取数据时获得的职能类别确认
+
+    sql = "SELECT title,COUNT(title),most_money\
         FROM job\
-        WHERE info LIKE "%软件开发%"\
+        WHERE MATCH (info) AGAINST ('+软件开发' IN BOOLEAN MODE)\
         GROUP BY title HAVING COUNT(*) > 0\
         ORDER BY COUNT(title) DESC\
         LIMIT 10\
-        '
+        "
     data_list = search_major_data(sql)
     print(jsonify(data_list))
     return jsonify(data_list)
@@ -122,13 +128,16 @@ def query_major_rk():
 
 @app.route('/zhuanye/ruanjianceshi', methods=['GET', 'POST'])
 def query_major_rc():
-    sql = 'SELECT TITLE,COUNT(TITLE),MOST_MONEY\
+
+    # TODO 将ORDER BY的COUNT(title)变为COUNT(worktype)，worktype字段由爬取数据时获得的职能类别确认
+
+    sql = "SELECT TITLE,COUNT(TITLE),MOST_MONEY\
         FROM job\
-        WHERE info LIKE "%软件测试%"\
+        WHERE MATCH (info) AGAINST ('+软件测试' IN BOOLEAN MODE)\
         GROUP BY title HAVING COUNT(*) > 0 \
         ORDER BY COUNT(title) DESC\
         LIMIT 10\
-        '
+        "
     data_list = search_major_data(sql)
     print(jsonify(data_list))
     return jsonify(data_list)
@@ -136,13 +145,15 @@ def query_major_rc():
 
 @app.route('/zhuanye/wangluoanquan', methods=['GET', 'POST'])
 def query_major_wa():
-    sql = 'SELECT TITLE,COUNT(TITLE),MOST_MONEY\
+    # TODO 将ORDER BY的COUNT(title)变为COUNT(worktype)，worktype字段由爬取数据时获得的职能类别确认
+
+    sql = "SELECT TITLE,COUNT(TITLE),MOST_MONEY\
         FROM job\
-        WHERE info LIKE "%网络安全%"\
+        WHERE MATCH (info) AGAINST ('+网络安全' IN BOOLEAN MODE)\
         GROUP BY title HAVING COUNT(*) > 0\
         ORDER BY COUNT(title) DESC\
         LIMIT 10\
-        '
+        "
     data_list = search_major_data(sql)
     print(jsonify(data_list))
     return jsonify(data_list)
@@ -150,13 +161,15 @@ def query_major_wa():
 
 @app.route('/zhuanye/dianzishangwu', methods=['GET', 'POST'])
 def query_major_ds():
-    sql = 'SELECT TITLE,COUNT(TITLE),MOST_MONEY\
+    # TODO 将ORDER BY的COUNT(title)变为COUNT(worktype)，worktype字段由爬取数据时获得的职能类别确认
+
+    sql = "SELECT TITLE,COUNT(TITLE),MOST_MONEY\
         FROM job\
-        WHERE info LIKE "%电子商务%"\
+        WHERE MATCH (info) AGAINST ('+电子商务' IN BOOLEAN MODE)\
         GROUP BY title HAVING COUNT(*) > 0\
         ORDER BY COUNT(title) DESC\
         LIMIT 10\
-        '
+        "
     data_list = search_major_data(sql)
     print(jsonify(data_list))
     return jsonify(data_list)
@@ -164,13 +177,15 @@ def query_major_ds():
 
 @app.route('/zhuanye/tongxinyuanli', methods=['GET', 'POST'])
 def query_major_tx():
-    sql = 'SELECT TITLE,COUNT(TITLE),MOST_MONEY\
+    # TODO 将ORDER BY的COUNT(title)变为COUNT(worktype)，worktype字段由爬取数据时获得的职能类别确认
+
+    sql = "SELECT TITLE,COUNT(TITLE),MOST_MONEY\
         FROM job\
-        WHERE info LIKE "%通信原理%" and title LIKE "%通信%"\
+        WHERE MATCH (info) AGAINST ('+通信原理' IN BOOLEAN MODE) and title LIKE '%通信%'\
         GROUP BY title HAVING COUNT(*) > 0\
         ORDER BY COUNT(title) DESC\
         LIMIT 10\
-        '
+        "
     data_list = search_major_data(sql)
     print(jsonify(data_list))
     return jsonify(data_list)
@@ -178,13 +193,15 @@ def query_major_tx():
 
 @app.route('/zhuanye/duomeitijishu', methods=['GET', 'POST'])
 def query_major_dmt():
-    sql = 'SELECT TITLE,COUNT(TITLE),MOST_MONEY\
+    # TODO 将ORDER BY的COUNT(title)变为COUNT(worktype)，worktype字段由爬取数据时获得的职能类别确认
+
+    sql = "SELECT TITLE,COUNT(TITLE),MOST_MONEY\
             FROM job\
-            WHERE info LIKE "%多媒体技术%"\
+            WHERE MATCH (info) AGAINST ('+多媒体技术' IN BOOLEAN MODE)\
             GROUP BY title HAVING COUNT(*) > 0\
             ORDER BY COUNT(title) DESC\
             LIMIT 10\
-            '
+            "
     data_list = search_major_data(sql)
     print(jsonify(data_list))
     return jsonify(data_list)
@@ -216,78 +233,90 @@ def search_demand_data(sql):
 # 职位名，需求量百分比
 @app.route('/xuqiu/ruanjiankaifa', methods=['GET', 'POST'])
 def query_demand_rk():
-    sql = 'SELECT TITLE,COUNT(TITLE)\
+    # TODO 将ORDER BY的COUNT(title)变为COUNT(worktype)，worktype字段由爬取数据时获得的职能类别确认
+
+    sql = "SELECT TITLE,COUNT(TITLE)\
         FROM job\
-        WHERE info LIKE "%软件开发%"\
+        WHERE MATCH (info) AGAINST ('+软件开发' IN BOOLEAN MODE)\
         GROUP BY title HAVING COUNT(*) > 0\
         ORDER BY COUNT(title) DESC\
         LIMIT 10\
-        '
+        "
     data_list = search_demand_data(sql)
     return jsonify(data_list)
 
 
 @app.route('/xuqiu/ruanjianceshi', methods=['GET', 'POST'])
 def query_demand_rc():
-    sql = 'SELECT TITLE,COUNT(TITLE)\
+    # TODO 将ORDER BY的COUNT(title)变为COUNT(worktype)，worktype字段由爬取数据时获得的职能类别确认
+
+    sql = "SELECT TITLE,COUNT(TITLE)\
         FROM job\
-        WHERE title LIKE "%测试%"\
+        WHERE title LIKE '%测试%'\
         GROUP BY title HAVING COUNT(*) > 0 \
         ORDER BY COUNT(title) DESC\
         LIMIT 10\
-        '
+        "
     data_list = search_demand_data(sql)
     return jsonify(data_list)
 
 
 @app.route('/xuqiu/wangluoanquan', methods=['GET', 'POST'])
 def query_demand_wa():
-    sql = 'SELECT TITLE,COUNT(TITLE)\
+    # TODO 将ORDER BY的COUNT(title)变为COUNT(worktype)，worktype字段由爬取数据时获得的职能类别确认
+
+    sql = "SELECT TITLE,COUNT(TITLE)\
         FROM job\
-        WHERE info LIKE "%网络安全%" or title LIKE "%网络"\
+        WHERE MATCH (info) AGAINST ('+网络安全' IN BOOLEAN MODE) or title LIKE '%网络'\
         GROUP BY title HAVING COUNT(*) > 0\
         ORDER BY COUNT(title) DESC\
         LIMIT 10\
-        '
+        "
     data_list = search_demand_data(sql)
     return jsonify(data_list)
 
 
 @app.route('/xuqiu/dianzishangwu', methods=['GET', 'POST'])
 def query_demand_ds():
-    sql = 'SELECT TITLE,COUNT(TITLE)\
+    # TODO 将ORDER BY的COUNT(title)变为COUNT(worktype)，worktype字段由爬取数据时获得的职能类别确认
+
+    sql = "SELECT TITLE,COUNT(TITLE)\
         FROM job\
-        WHERE info LIKE "%电子商务%"\
+        WHERE MATCH (info) AGAINST ('+电子商务' IN BOOLEAN MODE)\
         GROUP BY title HAVING COUNT(*) > 0\
         ORDER BY COUNT(title) DESC\
         LIMIT 10\
-            '
+        "
     data_list = search_demand_data(sql)
     return jsonify(data_list)
 
 
 @app.route('/xuqiu/tongxinyuanli', methods=['GET', 'POST'])
 def query_demand_tx():
-    sql = 'SELECT TITLE,COUNT(TITLE)\
+    # TODO 将ORDER BY的COUNT(title)变为COUNT(worktype)，worktype字段由爬取数据时获得的职能类别确认
+
+    sql = "SELECT TITLE,COUNT(TITLE)\
         FROM job\
-        WHERE info LIKE "%通信原理%"\
+        WHERE MATCH (info) AGAINST ('+通信原理' IN BOOLEAN MODE)\
         GROUP BY title HAVING COUNT(*) > 0\
         ORDER BY COUNT(title) DESC\
         LIMIT 10\
-        '
+        "
     data_list = search_demand_data(sql)
     return jsonify(data_list)
 
 
 @app.route('/xuqiu/duomeitijishu', methods=['GET', 'POST'])
 def query_demand_dmt():
-    sql = 'SELECT TITLE,COUNT(TITLE)\
+    # TODO 将ORDER BY的COUNT(title)变为COUNT(worktype)，worktype字段由爬取数据时获得的职能类别确认
+
+    sql = "SELECT TITLE,COUNT(TITLE)\
         FROM job\
-        WHERE info LIKE "%多媒体%"\
+        WHERE MATCH (info) AGAINST ('+多媒体' IN BOOLEAN MODE)\
         GROUP BY title HAVING COUNT(*) > 0\
         ORDER BY COUNT(title) DESC\
         LIMIT 10\
-        '
+        "
     data_list = search_demand_data(sql)
     return jsonify(data_list)
 
@@ -302,13 +331,15 @@ def query_demand_dmt():
 # 职位名，需求量
 @app.route('/position', methods=['GET', 'POST'])
 def query_position():
-    sql = 'SELECT title,COUNT(title) as titlenum\
+    # TODO 将ORDER BY的COUNT(title)变为COUNT(worktype)，worktype字段由爬取数据时获得的职能类别确认
+
+    sql = "SELECT title,COUNT(title) as titlenum\
         FROM job\
-        WHERE info LIKE "%大数据%"\
+        WHERE MATCH (info) AGAINST ('+大数据' IN BOOLEAN MODE)\
         GROUP BY title HAVING COUNT(*) > 0\
         ORDER BY COUNT(title) DESC\
         LIMIT 10\
-        '
+        "
     global dbUtil
     data_dict = {'names': [], 'values': []}
     result_list = list(dbUtil.query(sql))
@@ -337,13 +368,15 @@ def query_position():
 # 城市名，需求量
 @app.route('/city', methods=['GET', 'POST'])
 def query_city():
-    sql = 'SELECT place_province,COUNT(place_province) as num\
+    # TODO 将ORDER BY的COUNT(title)变为COUNT(worktype)，worktype字段由爬取数据时获得的职能类别确认
+
+    sql = "SELECT place_province,COUNT(place_province) as num\
         FROM job\
-        WHERE info LIKE "%大数据%"\
+        WHERE MATCH (info) AGAINST ('+大数据' IN BOOLEAN MODE)\
         GROUP BY place_province HAVING COUNT(*) > 0\
         ORDER BY COUNT(title) DESC\
         LIMIT 10\
-        '
+        "
     global dbUtil
     data_list = []
     result_list = list(dbUtil.query(sql))
@@ -370,13 +403,15 @@ def query_city():
 # 专业名，需求量
 @app.route('/talents', methods=['GET', 'POST'])
 def query_talents():
-    sql = 'SELECT title,COUNT(title) as titlenum\
+    # TODO 将ORDER BY的COUNT(title)变为COUNT(worktype)，worktype字段由爬取数据时获得的职能类别确认
+
+    sql = "SELECT title,COUNT(title) as titlenum\
         FROM job\
-        WHERE info LIKE "%大数据%" and title LIKE "%师"\
+        WHERE MATCH (info) AGAINST ('+大数据' IN BOOLEAN MODE) and title LIKE ‘%师’\
         GROUP BY title HAVING COUNT(*) > 0\
         ORDER BY COUNT(title) DESC\
         LIMIT 10\
-        '
+        "
     global dbUtil
     data_dict = {'names': [], 'values': [], 'extra': []}
     result_list = list(dbUtil.query(sql))
