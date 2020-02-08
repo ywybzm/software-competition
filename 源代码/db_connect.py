@@ -18,43 +18,47 @@ class DbConnect:
             try:
                 self.con = pymysql.connect(host=self.host, user=self.user, passwd=self.passwd,
                                            db=self.db, port=self.port, charset=self.charset)
-            except:
-                pass
+            except pymysql.Error as e:
+                print(e)
 
         if self.cur is None:
             try:
                 self.cur = self.con.cursor()
-            except:
-                pass
+            except pymysql.Error as e:
+                print(e)
 
     def close_connection(self):
         self.cur = None
         try:
             self.con.close()
-        except:
-            pass
+        except pymysql.Error as e:
+            print(e)
         finally:
             self.con = None
 
     def query(self, sql):
+        print("in db_connect's query(self, sql)方法中，sql语句为%s" % sql)
         data = []
         self.open_connection()
         try:
             self.cur.execute(sql)
             data = self.cur.fetchall()
-        except:
-            pass
+            print('查询成功')
+        except pymysql.Error as e:
+            print(e)
         finally:
             self.close_connection()
 
         return data
 
-    def update(self, sql, data):
+    def update(self, sql):
+        print("in db_connect's update(self, sql)方法中，sql语句为%s" % sql)
         self.open_connection()
         try:
-            self.cur.execute(sql, data)
+            self.cur.execute(sql)
             self.con.commit()
-        except:
-            pass
+            print('更新成功')
+        except pymysql.Error as e:
+            print(e)
         finally:
             self.close_connection()
