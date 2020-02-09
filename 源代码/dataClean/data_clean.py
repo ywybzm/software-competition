@@ -89,9 +89,33 @@ def data_clean(dirty_csv_name):
 
     # 将字段内的英文,变为中文,防止读取csv时的格式混乱
     df['title'] = df['title'].str.replace(r',', '，', regex=True)
-    df['company'] = df['company'].str.replace(r',', '，', regex=True)
-    df['info'] = df['info'].str.replace(r',', '，', regex=True)
+    # 将出现的多个* - # + 。 、变为一个空格
+    df['title'] = df['title'].str.replace(r'[\*\-\#/\+。、]+', ' ', regex=True)
+    # 左右中文括号变为英文括号
+    df['title'] = df['title'].str.replace(r'（', '(')
+    df['title'] = df['title'].str.replace(r'）', ')')
+    # 把不配对左括号( （删除
+    df['title'] = df['title'].str.replace(r'[\(（].*(?![\)）])', '', regex=True)
+    # 删除连接的大段空白字符
+    df['title'] = df['title'].str.replace(r'\s+', '', regex=True)
+    # 针对cleanData0.csv而言出现过，NET->.NET
+    df['title'] = df['title'].str.replace(r'，(?=N)', '.', regex=True)
+    # 将后面不出现汉字英文字母数字小中大括号的多余前缀,，。.、?/-+!删除
+    df['title'] = df['title'].str.replace(r'[,，\.。、\?/\-\+\!](?![\u4e00-\u9fa5a-zA-Z1-90\(\)（）【】\[\]\{\}])', '', regex=True)
+    # title字段为空字符就设置为空好方便直接dropna
+    df.loc[df['title'] == '', 'title'] = None
+    df.dropna(axis=0, how='any', inplace=True)
 
+    df['company'] = df['company'].str.replace(r',', '，', regex=True)
+
+    # 将字段内的英文,变为中文,防止读取csv时的格式混乱
+    df['info'] = df['info'].str.replace(r',', '，', regex=True)
+    # 删除连接的大段空白字符
+    df['info'] = df['info'].str.replace(r'\s+', '', regex=True)
+    # 将出现的多个* - # + 。 、变为一个空格
+    df['info'] = df['info'].str.replace(r'[\*\-\#/\+。、]+', ' ', regex=True)
+
+    # print(df['keyword'])
     # place_province字段取值一律省略省，直辖市省略市，直辖区省略区
     normal_province = ['黑龙江', '吉林', '辽宁', '江苏', '山东', '安徽', '河北', '河南', '湖北', '湖南', '江西', '陕西', '山西', '四川', '青海',
                        '海南', '广东', '贵州', '浙江', '福建', '台湾', '甘肃', '云南']
@@ -139,7 +163,7 @@ def data_clean(dirty_csv_name):
             if money_str.find(i) != -1:
                 money_str = re.sub(i, '', money_str)
                 # print(money_str + '*' + strings2numbers(i), i)
-                return float(eval(money_str + ' * ' + strings2numbers(i)))
+                return round(float(eval(money_str + ' * ' + strings2numbers(i))), 2)
         return None
 
     # least_money和most_money非空，对df的两个money字段所有属性都统一单位至XX千/月
@@ -147,7 +171,7 @@ def data_clean(dirty_csv_name):
     df['most_money'] = df['most_money'].apply(lambda x: money_process(x))
 
     # keyword非空；字段取值以“，”分隔，以“XX，XX，XX，XX”的形式存储关键词
-    df['keyword'] = df['keyword'].apply(lambda x: re.sub(r'\s', ',', (re.sub(r'\s+', ' ', x))).strip(','))
+    df['keyword'] = df['keyword'].apply(lambda x: re.sub(r'\s', '，', (re.sub(r'\s+', ' ', x))).strip('，'))
     # print(df.shape[0]) # 打印行数
     # print('------------------------------------------------------------------------------------------------------------')
 
@@ -210,12 +234,14 @@ if __name__ == "__main__":
         data_process(start_num, step)
         start_num += step
 
+
     def sql2file():
         with open(r'./test.sql', 'w', encoding='utf-8')  as f:
             for i in range(218):
                 f.write(r"LOAD DATA LOCAL INFILE 'D:/study/Pycharm/pycharm/QRdev/dataClean/clean/cleanData"
                         + str(
                     i) + r".csv' INTO TABLE jobnew FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' IGNORE 1 LINES;" + '\n')
+
 
     # 生成需要导入navicate的sql语句文件
     sql2file()
