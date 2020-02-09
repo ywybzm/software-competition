@@ -37,37 +37,39 @@ def resume(place, major, text, db_util: DbConnect):
               + place + "%' or place_city like '%" + place + "%' limit " + str(k)  # 增加随机抽样的部分-即等距离选择特定数量样本
 
         data = db_util.query(sql)
-        db_util.close_connection()
 
         doc_test = text
         all_doc_chara = []
         all_doc = []
         try:
             for i in data:
+                # all_doc存储的是对应字段内容是工作名称、公司名称、最低薪资、最高薪资、关键词、详细信息
                 all_doc.append(i[0] + '-!-!-' + i[1] + '-!-!-' + i[2] + '-!-!-' + i[3] + '-!-!-' + i[4].split(' ')[5])
+                # all_doc_chara是工作名称和详细信息拼接成的字符串的列表，若出现英文字符变为大写的方便统一，也是作为下面生成该工作关键词的来源
                 all_doc_chara.append(
-                    "".join(re.sub(',|!|\?', '', i[0].upper())) + "".join(re.sub(',|!|\?| ', ' ', i[5].upper())))
+                    "".join(re.sub(r'[,，!?]', '', i[0].upper())) + "".join(re.sub(r'[,，!? ]', ' ', i[5].upper())))
             # TODO 生成词云
-        except:
-            pass
+        except Exception as e:
+            print(e)
 
         all_doc_list = []
         for doc in all_doc_chara:
-            # TODO 去除停用词
-            doc_list = [word for word in jieba.cut(doc)]
-            all_doc_list.append(doc_list)
+            # TODO 去除停用词，使用自定义词典或者语料库优化切词效果
+            # 对每一个工作名称和详细信息拼接成的字符串进行jieba.cut()切词
+            doc_list = [word for word in jieba.cut(doc)]  # doc_list格式是['X','X','X']，X是切的词
+            all_doc_list.append(doc_list)  # all_doc_list是所有记录切词的列表集合，格式是[ ['X','X'], ['X','X'], ['X','X'] ]
 
         # print(all_doc_list)#原文本的分词列表
         # TODO 去除停用词
-        doc_test_list = [word for word in jieba.cut(doc_test)]
+        doc_test_list = [word for word in jieba.cut(doc_test)]  # doc_test_list是用户输入的信息切词的结果列表，格式是['X','X']
 
-        # print(doc_test_list)#测试文本的分词列表
+        # print(doc_test_list)  # 测试文本的分词列表
         dictionary = corpora.Dictionary(all_doc_list)
-        # print(dictionary.keys())#原文本的字典键
-        # print(dictionary.token2id)#原文本键键名对应
-        corpus = [dictionary.doc2bow(doc) for doc in all_doc_list]
-        # print(corpus)#原文本键和出现次数[[(),()],[(),()]]
-        doc_test_vec = dictionary.doc2bow(doc_test_list)
+        # print(dictionary.keys())  # 原文本的字典键
+        # print(dictionary.token2id)  # 原文本键键名对应
+        corpus = [dictionary.doc2bow(doc) for doc in all_doc_list]  # corpus是已有数据的切词结果生成的列表生成的句向量的列表
+        # print(corpus)  # 原文本键和出现次数[[(),()],[(),()]]
+        doc_test_vec = dictionary.doc2bow(doc_test_list) # 和上述corpus的生成方法是一致的，只不过文本只有很少一部分所以作为doc_test_vec
         # print(doc_test_vec)
         tfidf = models.TfidfModel(corpus)  # 不同的转化需要不同的参数，在TF-IDF转化中，训练的过程就是简单的遍历训练语料库(corpus)，然后计算文档中每个特征的频率。
         # 找到有特征性的词作为区分的标准，tf计算是局部的，idf计算是全局的

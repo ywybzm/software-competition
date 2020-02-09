@@ -93,9 +93,11 @@ def search_major_data(sql):
     result_list = list(dbUtil.query(sql))
 
     # 处理数据使其符合echarts要求
+    # TODO 修改
     result_list_sorted_by_money = money_int.money_str2int(result_list)
     for i in range(len(result_list_sorted_by_money)):
         data_list.append({'name': result_list_sorted_by_money[i][0],
+                          # TODO 修改
                           'value': (int(result_list_sorted_by_money[i][1] / 1000 / 12))})
 
     dbUtil.close_connection()
