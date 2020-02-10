@@ -32,15 +32,15 @@ def resume(place, major, text, db_util: DbConnect):
         k = 100  # 暂定
         # TODO 阈值需要固定步长去试探，评判标准可以是机器学习中的查准率，查全率和F值；对所有阈值选择使用matplotlib绘制点线图查看拐点，对应阈值就是效果最好的阈值
         threshold = 0.005
+        # TODO 增加随机抽样的部分-即等距离选择特定数量样本
         sql = "select distinct title,company,least_money,most_money,keyword,info from job where keyword like '%" \
               + major + "%' or info like '%" + major + "%' or title like '%" + major + "%'  and place_province like '%" \
-              + place + "%' or place_city like '%" + place + "%' limit " + str(k)  # 增加随机抽样的部分-即等距离选择特定数量样本
-
+              + place + "%' or place_city like '%" + place + "%' limit " + str(k)
         data = db_util.query(sql)
-
         doc_test = text
         all_doc_chara = []
         all_doc = []
+
         try:
             for i in data:
                 # all_doc存储的是对应字段内容是工作名称、公司名称、最低薪资、最高薪资、关键词、详细信息
@@ -53,39 +53,62 @@ def resume(place, major, text, db_util: DbConnect):
             print(e)
 
         all_doc_list = []
+        with open(r'./stop_word.txt', 'r', encoding='utf-8') as f:
+            stop_word_list = f.readlines()
+        print(type(stop_word_list), stop_word_list)
+        # TODO 查看去除停用词的效果，添加自定义词典内容
+        # 读取自定义字典
+        # jieba.load_userdict('word_dict.txt')
+
         for doc in all_doc_chara:
-            # TODO 去除停用词，使用自定义词典或者语料库优化切词效果
             # 对每一个工作名称和详细信息拼接成的字符串进行jieba.cut()切词
-            doc_list = [word for word in jieba.cut(doc)]  # doc_list格式是['X','X','X']，X是切的词
+            # TODO 可选 去除doc_list中词频过低的分词；调整jieba.cut()的模式
+            doc_list = [word for word in jieba.cut(doc) if word not in stop_word_list]  # doc_list格式是['X','X','X']，X是切的词
             all_doc_list.append(doc_list)  # all_doc_list是所有记录切词的列表集合，格式是[ ['X','X'], ['X','X'], ['X','X'] ]
 
         # print(all_doc_list)#原文本的分词列表
-        # TODO 去除停用词
-        doc_test_list = [word for word in jieba.cut(doc_test)]  # doc_test_list是用户输入的信息切词的结果列表，格式是['X','X']
 
+        doc_test_list = [word for word in jieba.cut(doc_test) if word not in stop_word_list]  # doc_test_list是用户输入的信息切词的结果列表，格式是['X','X']
         # print(doc_test_list)  # 测试文本的分词列表
+
         dictionary = corpora.Dictionary(all_doc_list)
         # print(dictionary.keys())  # 原文本的字典键
         # print(dictionary.token2id)  # 原文本键键名对应
-        corpus = [dictionary.doc2bow(doc) for doc in all_doc_list]  # corpus是已有数据的切词结果生成的列表生成的句向量的列表
-        # print(corpus)  # 原文本键和出现次数[[(),()],[(),()]]
+        # print(dictionary.dfs)  # 词频
+
         doc_test_vec = dictionary.doc2bow(doc_test_list) # 和上述corpus的生成方法是一致的，只不过文本只有很少一部分所以作为doc_test_vec
         # print(doc_test_vec)
-        tfidf = models.TfidfModel(corpus)  # 不同的转化需要不同的参数，在TF-IDF转化中，训练的过程就是简单的遍历训练语料库(corpus)，然后计算文档中每个特征的频率。
-        # 找到有特征性的词作为区分的标准，tf计算是局部的，idf计算是全局的
+
+        corpus = [dictionary.doc2bow(doc) for doc in all_doc_list]  # corpus是已有数据的切词结果生成的列表生成的句向量的列表
+        # print(corpus)  # 原文本键id和出现次数,格式是[ [ (字典id1,词频), (字典id2,词频) ] , [ (... , ... ), ...] ]
+        # 可以将corpus序列化方便保存，但鉴于该功能要对对应进行查询，可能会产生多个不同的corpus，故暂时不保存
+        # 保存方法如下:
+        # corpora.MmCorpus.serialize('vector.mm', corpus)
+        # # 加载mm文件
+        # corpus=corpora.MmCorpus('vector.mm')
+
         # tf-idf算法是创建在这样一个假设之上的：对区别文档最有意义的词语应该是那些在文档中出现频率高，而在整个文档集合的其他文档中出现频率少的词语
         # 但是在本质上idf是一种试图抑制噪声的加权，并且单纯地认为文本频率小的单词就越重要，文本频率大的单词就越无用，显然这并不是完全正确的。idf的简单结构并不能有效地反映单词的重要程度和特征词的分布情况，使其无法很好地完成对权值调整的功能，所以tf-idf法的精度并不是很高。
+        # 不同的转化需要不同的参数，在TF-IDF转化中，训练的过程就是简单的遍历训练语料库(corpus)，然后计算文档中每个特征的频率。
+        # 找到有特征性的词作为区分的标准，tf计算是局部的，idf计算是全局的
+        tfidf = models.TfidfModel(corpus)
+        # 同样，也可以保存tfidf这个模型和tfidf[corpus]这个结果(tfidf[corpus]是计算了corpus(格式是[ [(), ()], [(), ()] ])的每一个[(), ()]-:[ (id,
+        # idf权值), (id, idf权值) ])
+        # 保存模型的方法如下: tfidf.save("./model.tfidf") tfidf = models.TfidfModel.load("./model.tfidf")
+
+        # 用待检索的文档向量初始化一个相似度计算的对象：
         index = similarities.SparseMatrixSimilarity(tfidf[corpus], num_features=len(dictionary.keys()))
 
+        # 借助index对象计算任意一段待查询文本和所有文档的（余弦）相似度：
         sim = index[tfidf[doc_test_vec]]
         # print(sim)
+
         res = sorted(enumerate(sim), key=lambda item: -item[1])
         res_list = []
         child_res_dict = {'node': [], 'link': []}
         print(res)
 
         # 处理数据使其符合echarts要求
-
         cou_num = 1
         if len(res) <= 5:
             loop_num = len(res)

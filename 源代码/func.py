@@ -13,8 +13,6 @@ from flask_cors import CORS
 import welf_search
 import db_connect
 import money_int
-import money_least
-import money_most
 import resume
 
 app = Flask(__name__)
@@ -93,11 +91,9 @@ def search_major_data(sql):
     result_list = list(dbUtil.query(sql))
 
     # 处理数据使其符合echarts要求
-    # TODO 修改
     result_list_sorted_by_money = money_int.money_str2int(result_list)
     for i in range(len(result_list_sorted_by_money)):
         data_list.append({'name': result_list_sorted_by_money[i][0],
-                          # TODO 修改
                           'value': (int(result_list_sorted_by_money[i][1] / 1000 / 12))})
 
     dbUtil.close_connection()
@@ -497,8 +493,8 @@ def search_salary(sql):
     is_not_same = []
 
     # TODO 此处只要把数据库中的least_money和most_money字段都转为数字就不需要再用到这两个函数了，所以这两个函数可以不用整理
-    least_money_list = money_least.get_least_money(result_list)
-    most_money_list = money_most.get_most_money(result_list)
+    least_money_list = money_int.get_least_money(result_list)
+    most_money_list = money_int.get_most_money(result_list)
     least_money_temp_list = []
     most_money_temp_list = []
 
