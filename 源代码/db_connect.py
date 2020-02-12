@@ -1,3 +1,5 @@
+import logging
+import re
 import pymysql
 from DBUtils.PooledDB import PooledDB
 
@@ -12,6 +14,7 @@ from DBUtils.PooledDB import PooledDB
 class DbConnect:
 
     def __init__(self, host='', user='', passwd='', db='', port=3306, charset="utf8"):
+        logging.debug("-------------------into DbConnect's __init__:-------------------")
         self.host = host
         self.user = user
         self.port = int(port)
@@ -20,10 +23,17 @@ class DbConnect:
         self.charset = charset
         self.con = None
         self.cur = None
+
         # 5为连接池里的最少连接数, setsession=['SET AUTOCOMMIT = 1']是用来设置线程池是否打开自动更新的配置，0为False，1为True
-        self.pool = PooledDB(pymysql, 5, host=self.host, user=self.user, passwd=self.passwd, db=self.db, port=self.port, charset=self.charset,
-                             setsession=[
-                                 'SET AUTOCOMMIT = 1'])
+        self.pool = PooledDB(pymysql, 5, host=self.host, user=self.user, passwd=self.passwd, db=self.db, port=self.port,
+                             charset=self.charset,
+                             setsession=['SET AUTOCOMMIT = 1'])
+
+        logging.debug(
+            "\tdb_connect.DbConnect.__init__(self, host='', user='', passwd='', db='', port=3306, charset='utf8') "
+            "variables host=%s, user=%s, port=%s, passwd=%s, db=%s, charset=%s ,con=None, cur=None, pool=%s" % (
+                host, user, port, passwd, db, charset, type(self.pool)))
+        logging.debug("-------------------exit DbConnect's __init__:-------------------")
 
     def open_connection(self):
         if self.con is None:
@@ -32,48 +42,66 @@ class DbConnect:
                 self.con = self.pool.connection()
                 # self.con = pymysql.connect(host=self.host, user=self.user, passwd=self.passwd,
                 #                            db=self.db, port=self.port, charset=self.charset)
+                logging.info("\t数据库打开连接成功-")
             except pymysql.Error as e:
-                print(e)
+                logging.info("\t数据库打开连接失败")
+                logging.error(e, exc_info=True)
+            except:
+                logging.error("\tdb_connect.DBConnect.open_connection出现了意料之外的错误")
 
         if self.cur is None:
             try:
                 self.cur = self.con.cursor()
+                logging.info("\t数据库获取游标成功-")
             except pymysql.Error as e:
-                print(e)
+                logging.info("\t数据库获取游标失败")
+                logging.error(e, exc_info=True)
+            except:
+                logging.error("\tdb_connect.DBConnect.open_connection出现了意料之外的错误")
 
     def close_connection(self):
         self.cur = None
         try:
             self.con.close()
+            logging.info("\t数据库关闭连接成功")
         except pymysql.Error as e:
-            print(e)
+            logging.info("\t数据库关闭连接失败")
+            logging.error(e, exc_info=True)
+        except:
+            logging.error("\tdb_connect.DBConnect.close_connection出现了意料之外的错误")
         finally:
             self.con = None
 
     def query(self, sql):
-        print("in db_connect's query(self, sql)方法中，sql语句为%s" % sql)
+        logging.debug("-------------------into DbConnect's query:-------------------")
+        logging.debug("\tdb_connect.DbConnect.query(self, sql)数据库查询语句为%s" % re.sub(r'\s+', ' ', sql))
         data = []
         self.open_connection()
         try:
             self.cur.execute(sql)
             data = self.cur.fetchall()
-            print('查询成功')
+            logging.info("\t数据库查询成功")
         except pymysql.Error as e:
-            print(e)
+            logging.info("\t数据库查询失败")
+            logging.error(e, exc_info=True)
         finally:
             self.close_connection()
-
+        logging.debug("-------------------exit DbConnect's query:-------------------")
         return data
 
     def update(self, sql):
-        print("in db_connect's update(self, sql)方法中，sql语句为%s" % sql)
+        logging.debug("-------------------into DbConnect's update:-------------------")
+        logging.debug("\tdb_connect.DbConnect.update(self, sql)数据库操作语句为%s" % re.sub(r'\s+', ' ', sql))
         self.open_connection()
         try:
             self.cur.execute(sql)
             self.con.commit()
-            print('更新成功')
+            logging.info("\t数据库更新成功")
         except pymysql.Error as e:
-            print(e)
+            logging.info("\t数据库更新失败")
+            logging.error(e, exc_info=True)
             self.con.rollback()
+            logging.info("\t数据库回滚成功")
         finally:
             self.close_connection()
+        logging.debug("-------------------exit DbConnect's update:-------------------")

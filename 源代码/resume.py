@@ -1,3 +1,4 @@
+import logging
 import jieba
 import re
 from gensim import corpora, models, similarities
@@ -27,15 +28,18 @@ yy1 = 250
 
 
 def resume(place, major, text, db_util: DbConnect):
+    logging.info("-------------------into resume:-------------------")
+    logging.info("\tresume.resume(place, major, text, db_util: DbConnect) arguemnt place=%s, major=%s, text=%s, db_util" % (place, major, text))
     if text != '':
         # TODO 使用随机抽样的方法选取特定数量的样本,确定合适的常数k
         k = 100  # 暂定
         # TODO 阈值需要固定步长去试探，评判标准可以是机器学习中的查准率，查全率和F值；对所有阈值选择使用matplotlib绘制点线图查看拐点，对应阈值就是效果最好的阈值
         threshold = 0.005
         # TODO 增加随机抽样的部分-即等距离选择特定数量样本
-        sql = "select distinct title,company,least_money,most_money,keyword,info from job where keyword like '%" \
-              + major + "%' or info like '%" + major + "%' or title like '%" + major + "%'  and place_province like '%" \
-              + place + "%' or place_city like '%" + place + "%' limit " + str(k)
+        sql = "SELECT DISTINCT title,company,least_money,most_money,keyword,info FROM job WHERE keyword LIKE '%" \
+              + major + "%' OR info LIKE '%" + major + "%' OR title LIKE '%" + major + "%'  AND place_province LIKE '%" \
+              + place + "%' OR place_city LIKE '%" + place + "%' LIMIT " + str(k)
+        logging.info("\tresume(place, major, text, db_util: DbConnect) sql=%s" % sql)
         data = db_util.query(sql)
         doc_test = text
         all_doc_chara = []
@@ -44,18 +48,18 @@ def resume(place, major, text, db_util: DbConnect):
         try:
             for i in data:
                 # all_doc存储的是对应字段内容是工作名称、公司名称、最低薪资、最高薪资、关键词、详细信息
-                all_doc.append(i[0] + '-!-!-' + i[1] + '-!-!-' + i[2] + '-!-!-' + i[3] + '-!-!-' + i[4].split(' ')[5])
+                all_doc.append(i[0] + '-!-!-' + i[1] + '-!-!-' + str(i[2]) + '-!-!-' + str(i[3]) + '-!-!-' + i[4].split('，')[5])
                 # all_doc_chara是工作名称和详细信息拼接成的字符串的列表，若出现英文字符变为大写的方便统一，也是作为下面生成该工作关键词的来源
                 all_doc_chara.append(
                     "".join(re.sub(r'[,，!?]', '', i[0].upper())) + "".join(re.sub(r'[,，!? ]', ' ', i[5].upper())))
             # TODO 生成词云
         except Exception as e:
-            print(e)
+            logging.error(e, exc_info=True)
 
         all_doc_list = []
         with open(r'./stop_word.txt', 'r', encoding='utf-8') as f:
             stop_word_list = f.readlines()
-        print(type(stop_word_list), stop_word_list)
+        # print(type(stop_word_list), stop_word_list)
         # TODO 查看去除停用词的效果，添加自定义词典内容
         # 读取自定义字典
         # jieba.load_userdict('word_dict.txt')
@@ -106,7 +110,8 @@ def resume(place, major, text, db_util: DbConnect):
         res = sorted(enumerate(sim), key=lambda item: -item[1])
         res_list = []
         child_res_dict = {'node': [], 'link': []}
-        print(res)
+        # print(res)
+        logging.info("\tresume(place, major, text, db_util)产生的结果res=%s" % str(res))
 
         # 处理数据使其符合echarts要求
         cou_num = 1

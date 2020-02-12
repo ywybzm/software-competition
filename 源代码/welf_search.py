@@ -1,9 +1,8 @@
 # coding=utf-8
+import logging
 import jieba
 import re
 import json
-import time
-import ast
 from collections import Counter
 
 
@@ -57,6 +56,7 @@ def welf_re(welfare_num):
 
 
 def search_welf(welfare_num):
+    logging.info("-------------------into search_welf(welfare_num):-------------------")
     num = 0
     data_list = []
     result_list = welf_re(welfare_num)
@@ -66,5 +66,7 @@ def search_welf(welfare_num):
 
     for i in range(len(result_list)):
         data_list.append({'name': result_list[i][0], 'value': int((result_list[i][1]))})
-    print(data_list)
+    # print(data_list)
+    logging.info("\tsearch_welf(welfare_num)查询结果为%s" % str(data_list))
+    logging.info("-------------------exit search_welf(welfare_num):-------------------")
     return data_list
