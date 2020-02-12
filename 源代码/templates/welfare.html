@@ -371,76 +371,76 @@ function getUrlParam(key) {
 setEntity("#form", data);
 
 <!--console.log(data);-->
-                    $.ajax({
-                              type : "get",
-                              async : true, //异步请求（同步请求将会锁住浏览器，用户其他操作必须等待请求完成才可以执行）
-                              url : "http://127.0.0.1:5000/resume/", //请求发送到TestServlet处
-                              data :data,
-                              //dataType : "jsonp", //返回数据形式为json
-                              data:{"select1":getUrlParam('city'),"select2":getUrlParam('major'),"textArea1":getUrlParam('text')},
-                              success : function(result) {
-                              //请求成功时执行该函数内容，result即为服务器返回的json对象
-                                if (result) {
-                                console.log(result);
-                                  names=result[0]['node'];
-                                  nums=result[0]['link'];
-                                  console.log(names);
-                                  chart.setOption( {
+<!--                    $.ajax({-->
+<!--                              type : "get",-->
+<!--                              async : true, //异步请求（同步请求将会锁住浏览器，用户其他操作必须等待请求完成才可以执行）-->
+<!--                              url : "http://127.0.0.1:5000/resume/", //请求发送到TestServlet处-->
+<!--                              data :data,-->
+<!--                              //dataType : "jsonp", //返回数据形式为json-->
+<!--                              data:{"select1":getUrlParam('city'),"select2":getUrlParam('major'),"textArea1":getUrlParam('text')},-->
+<!--                              success : function(result) {-->
+<!--                              //请求成功时执行该函数内容，result即为服务器返回的json对象-->
+<!--                                if (result) {-->
+<!--                                console.log(result);-->
+<!--                                  names=result[0]['node'];-->
+<!--                                  nums=result[0]['link'];-->
+<!--                                  console.log(names);-->
+<!--                                  chart.setOption( {-->
 
-        title: {
-            text: '',
-            subtext: 'Circular layout',
-            top: 'bottom',
-            left: 'right'
-        },
-        tooltip: {},
-        legend: [{
-            // selectedMode: 'single',
-            //data: categories.map(function (a) {
-            //    return a.name;
-            //})
-        }],
-        animationDurationUpdate: 1000,
-        animationEasingUpdate: 'quinticInOut',
-        series : [
-            {
-                name: '',
-                type: 'graph',
-                layout: 'force',
-                tooltip : {
-                   trigger: 'item',
-                   formatter: '{b}'
-                  },
-                circular: {
-                    rotateLabel: true
-                },
-                data:names,
-                links: nums,
-                //categories: categories,
-                roam: true,
-                symbol: 'circle',
-                symbolSize: 25,
+<!--        title: {-->
+<!--            text: '',-->
+<!--            subtext: 'Circular layout',-->
+<!--            top: 'bottom',-->
+<!--            left: 'right'-->
+<!--        },-->
+<!--        tooltip: {},-->
+<!--        legend: [{-->
+<!--            // selectedMode: 'single',-->
+<!--            //data: categories.map(function (a) {-->
+<!--            //    return a.name;-->
+<!--            //})-->
+<!--        }],-->
+<!--        animationDurationUpdate: 1000,-->
+<!--        animationEasingUpdate: 'quinticInOut',-->
+<!--        series : [-->
+<!--            {-->
+<!--                name: '',-->
+<!--                type: 'graph',-->
+<!--                layout: 'force',-->
+<!--                tooltip : {-->
+<!--                   trigger: 'item',-->
+<!--                   formatter: '{b}'-->
+<!--                  },-->
+<!--                circular: {-->
+<!--                    rotateLabel: true-->
+<!--                },-->
+<!--                data:names,-->
+<!--                links: nums,-->
+<!--                //categories: categories,-->
+<!--                roam: true,-->
+<!--                symbol: 'circle',-->
+<!--                symbolSize: 25,-->
 
-                label: {
-                    normal: {
-                        position: 'right',
-                        show: true
-                    }
-                },
-                lineStyle: {
-                    normal: {
-                        color: 'source',
-                        curveness: 0.3
-                    }
-                },
-                force: {
-                    repulsion: 300
-                }
+<!--                label: {-->
+<!--                    normal: {-->
+<!--                        position: 'right',-->
+<!--                        show: true-->
+<!--                    }-->
+<!--                },-->
+<!--                lineStyle: {-->
+<!--                    normal: {-->
+<!--                        color: 'source',-->
+<!--                        curveness: 0.3-->
+<!--                    }-->
+<!--                },-->
+<!--                force: {-->
+<!--                    repulsion: 300-->
+<!--                }-->
 
-            }
-        ]
+<!--            }-->
+<!--        ]-->
 
-      });
+<!--      });-->
 
 
                                     }},
